@@ -11,19 +11,45 @@ from mergedeep import merge
 
 
 @click.command()
-@click.option('-d', '--directory', type=click.Path(exists=True))
-@click.option('-c', '--config-file', type=click.File())
-@click.option('-p', '--params', default=[], multiple=True)
-@click.option('-t', '--tags', default="{}")
+@click.option('-d', '--directory', type=click.Path(exists=True), help='directory of stackl docs (.yml files) to upload')
+@click.option('-c', '--config-file', type=click.File(), help='single .yml config file to upload')
+@click.option('-p', '--params', default=[], multiple=True, metavar='json-string', help='add runtime parameters for the stack instance')
+@click.option('-t', '--tags', default="{}", metavar='json-string', help='add tags to the stack instance')
 @click.option('-r', '--replicas', default="{}")
-@click.option('-s', '--secrets', default="{}")
-@click.option('-e', '--service-params', default="{}")
-@click.option('--service-secrets', default="{}")
+@click.option('-s', '--secrets', default="{}", metavar='json-string', help='list of secrets e.g: {"admin_pass":"secret/data/prod/adm_secret"}')
+@click.option('-e', '--service-params', default="{}", metavar='json-string', help='service bounded params')
+@click.option('--service-secrets', default="{}", metavar='json-string', help="""
+    service bounded secrets paths to map.
+    \b
+    EXAMPLE:
+    {
+    "myservice1":
+        {"db_secret":"secret/data/db_secret1"},
+    "myservice2":
+        {"db_secret":"secret/data/db_secret2"}
+    }
+""")
 @click.option('--services', default=[])
-@click.option('-s', '--show-progress', default=False, is_flag=True)
+@click.option('-s', '--show-progress', default=False, is_flag=True, help='Shows progress and waits until the instance is done')
 @click.argument('instance-name', required=False)
 def apply(directory, config_file, params, tags, secrets, service_params,
           service_secrets, replicas, services, instance_name, show_progress):
+    """
+    Apply/upload stackl document(s) to the stackl host.
+
+    \b
+    If INSTANCE_NAME is passed, then a --config-file is expected
+    $ stackl apply -c my-stack.yml my-stack-instance-V1
+
+    \b
+    Upload a entire directory (recursive) of .yml stackl docs
+    $ stackl apply -d docs
+
+    \b
+    provide additional params/secrets
+    $ stackl apply -c my-stack.yml -p '{"machine_name": "test", "instance_type": "t2.micro"}' -s 'secret/data/infra/creds' my-stack-instance-V1
+    """
+
     stackl_context = StacklContext()
     if instance_name is None:
         upload_files(directory, stackl_context)
@@ -59,8 +85,6 @@ def apply_stack_instance(config_file, params, tags, secrets, service_params,
         tags = {**config_doc['tags'], **tags}
     if "services" in config_doc:
         services = config_doc['services']
-    if "stages" in config_doc:
-        stages = config_doc['stages']
     invocation = stackl_client.StackInstanceInvocation(
         stack_instance_name=instance_name,
         stack_infrastructure_template=config_doc[
@@ -72,7 +96,6 @@ def apply_stack_instance(config_file, params, tags, secrets, service_params,
         service_secrets=service_secrets,
         secrets=secrets,
         services=services,
-        stages=stages,
         tags=tags)
     try:
         stackl_context.stack_instances_api.get_stack_instance(instance_name)
