@@ -21,6 +21,75 @@ Stackl achieves this by:
 * providing **pluggable modules** for backend systems, such as processing and data storage, to support different scalability and performance requirements and enable users to **choose their preferred tools**
 
 In essence, it allows you to model, describe, and automate your application orchestration workflow, using a **version control system** (Git) to track and trigger changes, and provides a CLI interface for easy integrating with **any CI/CD** platform.
+# Stackl Components
+
+In a nutshell, Stackl consist out of these components:
+- Stackl Host/Core: The controller component which controls the state and orchestrates the agents
+- Stackl Agent: Carries out deployments jobs, ensuring stack inst
+- Stackl CLI
+- Stackl Documents
+```mermaid
+flowchart LR;
+  %% Components
+  subgraph Infrastructure Components
+    acceptance_env
+    production_env
+    development_env
+
+    security_zone
+    public_zone
+
+    azure_loc
+    vware_loc
+  end
+
+  subgraph Infrastructure Templates
+    AZURE_ACC_Infra
+    AZURE_PROD_Infra
+    VMWARE_DEV_Infra
+  end
+
+  subgraph Application Templates
+    WikiApp_Template
+    TicketingApp_Template
+  end
+
+  subgraph Functional Requirements
+  setup_resourcegroup
+  setup_vnet
+  apply_security
+  deploy_cloud_vm
+  apply_database_role
+  apply_wiki_app_role
+  apply_wiki_web_role
+  end
+
+  subgraph Services
+  base_service
+  frontend_service
+  backend_service
+  database_service
+  end
+
+  %% relationships
+  WikiApp_Template-->  base_service & frontend_service & backend_service &  database_service
+
+  AZURE_ACC_Infra---acceptance_env;
+  AZURE_ACC_Infra---azure_loc;
+  AZURE_ACC_Infra---security_zone;
+  AZURE_PROD_Infra---production_env;
+  AZURE_PROD_Infra---azure_loc;
+  AZURE_PROD_Infra---security_zone;
+
+  StackInstance_ACC---AZURE_ACC_Infra & WikiApp_Template;
+  StackInstance_PROD---AZURE_PROD_Infra & WikiApp_Template;
+
+  base_service---setup_resourcegroup & setup_vnet & apply_security
+  frontend_service---deploy_cloud_vm & apply_wiki_web_role
+  backend_service---deploy_cloud_vm & apply_database_role
+  database_service---deploy_cloud_vm & apply_wiki_app_role
+
+```
 
 ## :rocket:Installation
 
